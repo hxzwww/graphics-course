@@ -11,6 +11,8 @@ const float iTime = 2.0;
 #define MAX_DIST 40.0
 #define SURFACE_DIST 0.001
 #define PLANE_SHIFT 1.3
+#define EPS 0.001
+
 
 vec3 lightPos = vec3(2.0, 5.0, 5.0);
 vec3 ro = vec3(0.0, 0.0, 5.0);
@@ -24,8 +26,8 @@ float planeSDF(vec3 p) {
     return p.y + PLANE_SHIFT;
 }
 
-float sceneSDF(vec3 p, float time) {
-    float angle = time;
+float sceneSDF(vec3 p) {
+    float angle = iTime;
     float c = cos(angle);
     float s = sin(angle);
         
@@ -37,31 +39,28 @@ float sceneSDF(vec3 p, float time) {
     return min(dTorus, dPlane);
 }
 
-vec3 getNormal(vec3 p, float time) {
-    float epsilon = 0.001;
-    vec2 e = vec2(epsilon, 0);
+vec3 getNormal(vec3 p) {
+    vec2 e = vec2(EPS, 0);
     
     return normalize(vec3(
-        sceneSDF(p + e.xyy, time) - sceneSDF(p - e.xyy, time),
-        sceneSDF(p + e.yxy, time) - sceneSDF(p - e.yxy, time),
-        sceneSDF(p + e.yyx, time) - sceneSDF(p - e.yyx, time)
+        sceneSDF(p + e.xyy) - sceneSDF(p - e.xyy),
+        sceneSDF(p + e.yxy) - sceneSDF(p - e.yxy),
+        sceneSDF(p + e.yyx) - sceneSDF(p - e.yyx)
     ));
 }
 
-float shadow(vec3 ro, vec3 rd, float time) {
+float shadow(vec3 ro, vec3 rd) {
     float res = 1.0;
     float t = 0.1;
 
     for (int i = 0; i < MAX_STEPS; i++) {
-        float h = sceneSDF(ro + rd * t, time);
+        float h = sceneSDF(ro + rd * t);
 
         if (h < SURFACE_DIST) {
             return 0.0;
         }
-
         res = min(res, 10.0 * h / t);
         t += h;
-
         if (t > MAX_DIST) {
             break;
         }
@@ -70,19 +69,18 @@ float shadow(vec3 ro, vec3 rd, float time) {
     return res;
 }
 
-vec3 getLight(vec3 p, vec3 normal, vec3 lightDir, vec3 viewDir, float time) {
+vec3 getLight(vec3 p, vec3 normal, vec3 lightDir, vec3 viewDir) {
     float diff = max(dot(normal, lightDir), 0.0);
-    float shadowFactor = shadow(p + normal * SURFACE_DIST * 2.0, lightDir, time);
-    diff *= shadowFactor;
-    return vec3(-0.1) + vec3(1.0, 0.3, 0.8) * diff;
+    float shadowFactor = shadow(p + normal * SURFACE_DIST, lightDir);
+    return vec3(-0.1) + vec3(1.0, 0.3, 0.8) * diff * shadowFactor;
 }
 
-float rayMarch(vec3 rd, float time) {
+float rayMarch(vec3 rd) {
     float dist = 0.0;
 
     for (int i = 0; i < MAX_STEPS; i++) {
         vec3 p = ro + rd * dist;
-        float d = sceneSDF(p, time);
+        float d = sceneSDF(p);
 
         if (d < SURFACE_DIST) {
             return dist;
@@ -103,15 +101,15 @@ void main() {
     vec2 uv = (iuv - 0.5 * iResolution.xy) / iResolution.y;  
 
     vec3 rd = normalize(vec3(uv, -1.5));
-    float dist = rayMarch(rd, iTime);
+    float dist = rayMarch(rd);
 
     vec3 color = vec3(0.0);
     if (dist < MAX_DIST) {
         vec3 p = ro + rd * dist;
-        vec3 normal = getNormal(p, iTime);
+        vec3 normal = getNormal(p);
         vec3 lightDir = normalize(lightPos - p);
         vec3 viewDir = normalize(ro - p);
-        color = getLight(p, normal, lightDir, viewDir, iTime);
+        color = getLight(p, normal, lightDir, viewDir);
     }
     color = pow(color, vec3(1.0 / 2.2));
 

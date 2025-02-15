@@ -4,8 +4,11 @@ layout(local_size_x = 32, local_size_y = 32) in;
 
 layout(binding = 0, rgba8) uniform image2D resultImage;
 
+layout (push_constant) uniform Constants {
+    float iTime;
+} constants;
+
 const vec2 iResolution = vec2(1280, 720);
-const float iTime = 2.0;
 
 #define MAX_STEPS 1000
 #define MAX_DIST 40.0
@@ -27,7 +30,7 @@ float planeSDF(vec3 p) {
 }
 
 float sceneSDF(vec3 p) {
-    float angle = iTime;
+    float angle = constants.iTime;
     float c = cos(angle);
     float s = sin(angle);
         

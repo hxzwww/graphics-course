@@ -102,6 +102,8 @@ App::~App() {
 }
 
 void App::run() {
+    startTimePoint_ = std::chrono::system_clock::now();
+
     while (!osWindow->isBeingClosed()) {
         windowing.poll();
 
@@ -163,7 +165,7 @@ void App::drawFrame() {
                                image_.genBinding(sampler_.get(),
                                                  vk::ImageLayout::eGeneral)}});
 
-            auto vkSet = descriptors.getVkSet();
+            auto vkSet = descriptorSet.getVkSet();
 
             currentCmdBuf.bindPipeline(vk::PipelineBindPoint::eCompute,
                                        pipeline_.getVkPipeline());
@@ -178,6 +180,16 @@ void App::drawFrame() {
                             vk::ImageLayout::eGeneral,
                             vk::ImageAspectFlagBits::eColor);
 
+            Constants constants = {
+                .iTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+                             std::chrono::system_clock::now() - startTimePoint_)
+                             .count() / 1000.f,
+            };
+
+            currentCmdBuf.pushConstants(pipeline_.getVkPipelineLayout(),
+                                        vk::ShaderStageFlagBits::eCompute, 0,
+                                        sizeof(constants), &constants);
+
             etna::flush_barriers(currentCmdBuf);
 
             currentCmdBuf.dispatch(resolution.x / 32, resolution.y / 32, 1);
@@ -190,17 +202,20 @@ void App::drawFrame() {
 
             etna::flush_barriers(currentCmdBuf);
 
+            auto resx = static_cast<int32_t>(resolution.x);
+            auto resy = static_cast<int32_t>(resolution.y);
+
             vk::ImageBlit blit = {
                 .srcSubresource =
                     vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor,
                                                0, 0, 1},
-                .srcOffsets = {vk::Offset3D{0, 0, 0},
-                               vk::Offset3D{resolution.x, resolution.y, 1}},
+                .srcOffsets = {{vk::Offset3D{0, 0, 0},
+                                vk::Offset3D{resx, resy, 1}}},
                 .dstSubresource =
                     vk::ImageSubresourceLayers{vk::ImageAspectFlagBits::eColor,
                                                0, 0, 1},
-                .dstOffsets = {vk::Offset3D{0, 0, 0},
-                               vk::Offset3D{resolution.x, resolution.y, 1}},
+                .dstOffsets = {{vk::Offset3D{0, 0, 0},
+                                vk::Offset3D{resx, resy, 1}}},
             };
 
             currentCmdBuf.blitImage(

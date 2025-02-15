@@ -91,7 +91,7 @@ App::App() : resolution{1280, 720}, useVsync{true} {
     image_ = etna::get_context().createImage(etna::Image::CreateInfo{
         .extent = vk::Extent3D{resolution.x, resolution.y, 1},
         .name = "image",
-        .format = vk::Format::eR8G8B8A8Snorm,
+        .format = vk::Format::eR8G8B8A8Unorm,
         .imageUsage = vk::ImageUsageFlagBits::eTransferSrc |
                       vk::ImageUsageFlagBits::eStorage,
     });

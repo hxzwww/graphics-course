@@ -99,6 +99,7 @@ float rayMarch(vec3 rd) {
 void main() {
     ivec2 iuv = ivec2(gl_GlobalInvocationID.xy);
     vec2 uv = (iuv - 0.5 * iResolution.xy) / iResolution.y;  
+    uv.y = -uv.y;
 
     vec3 rd = normalize(vec3(uv, -1.5));
     float dist = rayMarch(rd);

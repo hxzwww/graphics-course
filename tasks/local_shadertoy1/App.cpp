@@ -84,7 +84,7 @@ App::App() : resolution{1280, 720}, useVsync{true} {
 
     // TODO: Initialize any additional resources you require here!
     etna::create_program("shadertoy",
-                         {LOCAL_SHADERTOY_SHADERS_ROOT "toy.comp.spv"});
+                         {LOCAL_SHADERTOY1_SHADERS_ROOT "toy.comp.spv"});
     pipeline_ = etna::get_context().getPipelineManager().createComputePipeline(
         "shadertoy", {});
     sampler_ = etna::Sampler(etna::Sampler::CreateInfo{.name = "sampler"});
